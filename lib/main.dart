@@ -32,13 +32,43 @@ class MyAppState extends ChangeNotifier {
     word = WordPair.random();
     notifyListeners();
   }
+
+  void selectWord(WordPair updatedWord) {
+    word = updatedWord;
+    notifyListeners();
+  }
+
+  var favorites = <WordPair>[];
+
+  void toggleFavorits(WordPair word) {
+    if (favorites.contains(word)) {
+      favorites.remove(word);
+    } else {
+      favorites.add(word);
+    }
+    notifyListeners();
+  }
 }
 
 class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+
     var word = appState.word;
+    var favorites = appState.favorites;
+
+    void onNext() {
+      appState.getNext();
+    }
+
+    void onLike() {
+      appState.toggleFavorits(word);
+    }
+
+    void selectWord(word) {
+      appState.selectWord(word);
+    }
 
     return Scaffold(
       body: Center(
@@ -47,15 +77,87 @@ class MyHomePage extends StatelessWidget {
           children: [
             Word(word: word),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                appState.getNext();
-              },
-              child: Text('Next'),
-            ),
+            Controls(onLike: onLike, onNext: onNext),
+            SizedBox(height: 60),
+            Column(
+              children: favorites
+                  .map((w) => LikedWord(
+                        word: w,
+                        isActive: w == word,
+                        onClick: () => selectWord(w),
+                      ))
+                  .toList(),
+            )
           ],
         ),
       ),
+    );
+  }
+}
+
+class LikedWord extends StatelessWidget {
+  const LikedWord({
+    super.key,
+    required this.word,
+    required this.isActive,
+    required this.onClick,
+  });
+
+  final WordPair word;
+  final bool isActive;
+  final void Function() onClick;
+
+  @override
+  Widget build(BuildContext context) {
+    var theme = Theme.of(context);
+    var bg = isActive ? theme.colorScheme.primary : theme.colorScheme.secondary;
+
+    return SizedBox(
+      width: 200,
+      child: Padding(
+        padding: const EdgeInsets.all(2.0),
+        child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: bg,
+            ),
+            onPressed: onClick,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(word.asCamelCase,
+                  style: TextStyle(
+                    color: theme.colorScheme.onPrimary,
+                  )),
+            )),
+      ),
+    );
+  }
+}
+
+class Controls extends StatelessWidget {
+  const Controls({
+    super.key,
+    required this.onLike,
+    required this.onNext,
+  });
+
+  final void Function() onLike;
+  final void Function() onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        ElevatedButton(
+          onPressed: onLike,
+          child: Text('Like'),
+        ),
+        SizedBox(width: 15.0),
+        ElevatedButton(
+          onPressed: onNext,
+          child: Text('Next'),
+        ),
+      ],
     );
   }
 }
