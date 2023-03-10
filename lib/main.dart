@@ -179,7 +179,10 @@ class LikedWordsPage extends StatelessWidget {
     var word = state.word;
     var favorites = state.favorites;
 
-    void selectWord(WordPair w) {}
+    void selectWord(WordPair w) {
+      state.selectWord(w);
+      toMain();
+    }
 
     if (favorites.isEmpty) {
       return Center(
@@ -200,14 +203,17 @@ class LikedWordsPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Text("You have ${favorites.length} favorities"),
+          SizedBox(height: 15),
           Column(
-            children: favorites
-                .map((w) => LikedWord(
-                      word: w,
-                      isActive: w == word,
-                      onClick: () => selectWord(w),
-                    ))
-                .toList(),
+            children: [
+              for (var w in favorites)
+                LikedWord(
+                  word: w,
+                  isActive: w == word,
+                  onClick: () => selectWord(w),
+                ),
+            ],
           ),
           SizedBox(height: 30),
           ElevatedButton(
