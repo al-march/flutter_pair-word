@@ -29,10 +29,22 @@ class LikedWord extends StatelessWidget {
             onPressed: onClick,
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text(word.asCamelCase,
-                  style: TextStyle(
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.favorite,
                     color: theme.colorScheme.onPrimary,
-                  )),
+                    size: 12,
+                  ),
+                  SizedBox(width: 10),
+                  Text(
+                    word.asCamelCase,
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ],
+              ),
             )),
       ),
     );
