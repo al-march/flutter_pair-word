@@ -48,6 +48,11 @@ class MyAppState extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  void resetFavorits() {
+    favorites = <WordPair>[];
+    notifyListeners();
+  }
 }
 
 class MyHomePage extends StatelessWidget {
@@ -70,6 +75,10 @@ class MyHomePage extends StatelessWidget {
       appState.selectWord(word);
     }
 
+    bool isLiked() {
+      return favorites.contains(word);
+    }
+
     return Scaffold(
       body: Center(
         child: Column(
@@ -77,7 +86,11 @@ class MyHomePage extends StatelessWidget {
           children: [
             Word(word: word),
             SizedBox(height: 20),
-            Controls(onLike: onLike, onNext: onNext),
+            Controls(
+              onLike: onLike,
+              onNext: onNext,
+              isLiked: isLiked(),
+            ),
             SizedBox(height: 60),
             Column(
               children: favorites
@@ -87,6 +100,11 @@ class MyHomePage extends StatelessWidget {
                         onClick: () => selectWord(w),
                       ))
                   .toList(),
+            ),
+            SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () => appState.resetFavorits(),
+              child: Text("Reset"),
             )
           ],
         ),
@@ -138,19 +156,29 @@ class Controls extends StatelessWidget {
     super.key,
     required this.onLike,
     required this.onNext,
+    required this.isLiked,
   });
 
   final void Function() onLike;
   final void Function() onNext;
+  final bool isLiked;
 
   @override
   Widget build(BuildContext context) {
+    IconData icon;
+    if (isLiked) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
+
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        ElevatedButton(
+        ElevatedButton.icon(
           onPressed: onLike,
-          child: Text('Like'),
+          icon: Icon(icon),
+          label: Text('Like'),
         ),
         SizedBox(width: 15.0),
         ElevatedButton(
