@@ -67,18 +67,27 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   var selectedIndex = 0;
 
+  void toMain() {
+    setState(() {
+      selectedIndex = 0;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    var state = context.watch<MyAppState>();
+    var favorites = state.favorites;
+
     Widget page;
     switch (selectedIndex) {
       case 0:
         page = GeneratorPage();
         break;
       case 1:
-        page = LikedWordsPage();
+        page = LikedWordsPage(toMain: toMain);
         break;
       default:
-        throw UnimplementedError('no widget for $selectedIndex');
+        page = NotFoundPage(goHome: toMain);
     }
 
     return Scaffold(
@@ -93,7 +102,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   label: Text('Home'),
                 ),
                 NavigationRailDestination(
-                  icon: Icon(Icons.favorite),
+                  icon: Badge(
+                    label: Text(favorites.length.toString()),
+                    child: Icon(Icons.favorite),
+                  ),
                   label: Text('Favorites'),
                 ),
               ],
@@ -155,6 +167,10 @@ class GeneratorPage extends StatelessWidget {
 }
 
 class LikedWordsPage extends StatelessWidget {
+  const LikedWordsPage({super.key, required this.toMain});
+
+  final void Function() toMain;
+
   @override
   Widget build(BuildContext context) {
     var state = context.watch<MyAppState>();
@@ -162,6 +178,21 @@ class LikedWordsPage extends StatelessWidget {
     var favorites = state.favorites;
 
     void selectWord(WordPair w) {}
+
+    if (favorites.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("No favorites"),
+            ElevatedButton(
+              onPressed: toMain,
+              child: Text("Return"),
+            )
+          ],
+        ),
+      );
+    }
 
     return Center(
       child: Column(
@@ -183,6 +214,29 @@ class LikedWordsPage extends StatelessWidget {
           )
         ],
       ),
+    );
+  }
+}
+
+class NotFoundPage extends StatelessWidget {
+  const NotFoundPage({
+    super.key,
+    required this.goHome,
+  });
+
+  final void Function() goHome;
+
+  @override
+  Widget build(BuildContext _) {
+    return Column(
+      children: [
+        Text("Page not found"),
+        SizedBox(height: 20),
+        ElevatedButton(
+          onPressed: goHome,
+          child: Text("Main page"),
+        )
+      ],
     );
   }
 }
