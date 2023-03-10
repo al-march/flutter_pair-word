@@ -2,6 +2,10 @@ import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'components/word_controls.dart';
+import 'components/liked_word.dart';
+import 'components/word_card.dart';
+
 void main() {
   runApp(MyApp());
 }
@@ -55,7 +59,65 @@ class MyAppState extends ChangeNotifier {
   }
 }
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  var selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget page;
+    switch (selectedIndex) {
+      case 0:
+        page = GeneratorPage();
+        break;
+      case 1:
+        page = LikedWordsPage();
+        break;
+      default:
+        throw UnimplementedError('no widget for $selectedIndex');
+    }
+
+    return Scaffold(
+      body: Row(
+        children: [
+          SafeArea(
+            child: NavigationRail(
+              extended: false,
+              destinations: [
+                NavigationRailDestination(
+                  icon: Icon(Icons.home),
+                  label: Text('Home'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.favorite),
+                  label: Text('Favorites'),
+                ),
+              ],
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (value) {
+                setState(() {
+                  selectedIndex = value;
+                });
+              },
+            ),
+          ),
+          Expanded(
+            child: Container(
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              child: page,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class GeneratorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
@@ -71,152 +133,55 @@ class MyHomePage extends StatelessWidget {
       appState.toggleFavorits(word);
     }
 
-    void selectWord(word) {
-      appState.selectWord(word);
-    }
-
     bool isLiked() {
       return favorites.contains(word);
     }
 
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Word(word: word),
-            SizedBox(height: 20),
-            Controls(
-              onLike: onLike,
-              onNext: onNext,
-              isLiked: isLiked(),
-            ),
-            SizedBox(height: 60),
-            Column(
-              children: favorites
-                  .map((w) => LikedWord(
-                        word: w,
-                        isActive: w == word,
-                        onClick: () => selectWord(w),
-                      ))
-                  .toList(),
-            ),
-            SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () => appState.resetFavorits(),
-              child: Text("Reset"),
-            )
-          ],
-        ),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          WordCard(word: word),
+          SizedBox(height: 20),
+          WordControls(
+            onLike: onLike,
+            onNext: onNext,
+            isLiked: isLiked(),
+          ),
+        ],
       ),
     );
   }
 }
 
-class LikedWord extends StatelessWidget {
-  const LikedWord({
-    super.key,
-    required this.word,
-    required this.isActive,
-    required this.onClick,
-  });
-
-  final WordPair word;
-  final bool isActive;
-  final void Function() onClick;
-
+class LikedWordsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    var theme = Theme.of(context);
-    var bg = isActive ? theme.colorScheme.primary : theme.colorScheme.secondary;
+    var state = context.watch<MyAppState>();
+    var word = state.word;
+    var favorites = state.favorites;
 
-    return SizedBox(
-      width: 200,
-      child: Padding(
-        padding: const EdgeInsets.all(2.0),
-        child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: bg,
-            ),
-            onPressed: onClick,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(word.asCamelCase,
-                  style: TextStyle(
-                    color: theme.colorScheme.onPrimary,
-                  )),
-            )),
-      ),
-    );
-  }
-}
+    void selectWord(WordPair w) {}
 
-class Controls extends StatelessWidget {
-  const Controls({
-    super.key,
-    required this.onLike,
-    required this.onNext,
-    required this.isLiked,
-  });
-
-  final void Function() onLike;
-  final void Function() onNext;
-  final bool isLiked;
-
-  @override
-  Widget build(BuildContext context) {
-    IconData icon;
-    if (isLiked) {
-      icon = Icons.favorite;
-    } else {
-      icon = Icons.favorite_border;
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ElevatedButton.icon(
-          onPressed: onLike,
-          icon: Icon(icon),
-          label: Text('Like'),
-        ),
-        SizedBox(width: 15.0),
-        ElevatedButton(
-          onPressed: onNext,
-          child: Text('Next'),
-        ),
-      ],
-    );
-  }
-}
-
-class Word extends StatelessWidget {
-  const Word({
-    super.key,
-    required this.word,
-  });
-
-  final WordPair word;
-
-  @override
-  Widget build(BuildContext context) {
-    var theme = Theme.of(context);
-
-    var textStyle = theme.textTheme.displayMedium!.copyWith(
-      color: theme.colorScheme.onPrimary,
-      fontWeight: FontWeight.w900,
-    );
-
-    return Card(
-      color: theme.colorScheme.primary,
-      elevation: 12,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Text(
-          word.asCamelCase,
-          style: textStyle,
-          semanticsLabel: "${word.first} ${word.second}",
-        ),
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Column(
+            children: favorites
+                .map((w) => LikedWord(
+                      word: w,
+                      isActive: w == word,
+                      onClick: () => selectWord(w),
+                    ))
+                .toList(),
+          ),
+          SizedBox(height: 30),
+          ElevatedButton(
+            onPressed: () => state.resetFavorits(),
+            child: Text("Reset"),
+          )
+        ],
       ),
     );
   }
