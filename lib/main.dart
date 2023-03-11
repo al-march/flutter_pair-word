@@ -31,8 +31,15 @@ class MyApp extends StatelessWidget {
 
 class MyAppState extends ChangeNotifier {
   var word = WordPair.random();
+  var favorites = <WordPair>[];
+  var history = <WordPair>[];
+
+  GlobalKey? historyListKey;
 
   void getNext() {
+    addToHistory(word);
+    var animatedList = historyListKey?.currentState as AnimatedListState?;
+    animatedList?.insertItem(0);
     word = WordPair.random();
     notifyListeners();
   }
@@ -41,8 +48,6 @@ class MyAppState extends ChangeNotifier {
     word = updatedWord;
     notifyListeners();
   }
-
-  var favorites = <WordPair>[];
 
   void toggleFavorits(WordPair word) {
     if (favorites.contains(word)) {
@@ -56,6 +61,15 @@ class MyAppState extends ChangeNotifier {
   void resetFavorits() {
     favorites = <WordPair>[];
     notifyListeners();
+  }
+
+  void addToHistory(WordPair w) {
+    history.insert(0, w);
+    notifyListeners();
+  }
+
+  WordPair getFromHistory(int index) {
+    return history[index];
   }
 }
 
@@ -75,6 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    var colorScheme = Theme.of(context).colorScheme;
     var state = context.watch<MyAppState>();
     var favorites = state.favorites;
 
@@ -89,6 +104,14 @@ class _MyHomePageState extends State<MyHomePage> {
       default:
         page = NotFoundPage(goHome: toMain);
     }
+
+    var mainArea = ColoredBox(
+      color: colorScheme.surfaceVariant,
+      child: AnimatedSwitcher(
+        duration: Duration(milliseconds: 200),
+        child: page,
+      ),
+    );
 
     return LayoutBuilder(builder: (context, constraints) {
       return Scaffold(
@@ -118,12 +141,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
               ),
             ),
-            Expanded(
-              child: Container(
-                color: Theme.of(context).colorScheme.secondaryContainer,
-                child: page,
-              ),
-            ),
+            Expanded(child: mainArea),
           ],
         ),
       );
@@ -155,13 +173,19 @@ class GeneratorPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Expanded(
+            flex: 3,
+            child: HistoryList(),
+          ),
+          SizedBox(height: 10),
           WordCard(word: word),
-          SizedBox(height: 20),
+          SizedBox(height: 10),
           WordControls(
             onLike: onLike,
             onNext: onNext,
             isLiked: isLiked(),
           ),
+          Spacer(flex: 2),
         ],
       ),
     );
@@ -245,6 +269,62 @@ class NotFoundPage extends StatelessWidget {
           child: Text("Main page"),
         )
       ],
+    );
+  }
+}
+
+class HistoryList extends StatefulWidget {
+  static const Gradient _maskingGradient = LinearGradient(
+    // This gradient goes from fully transparent to fully opaque black...
+    colors: [Colors.transparent, Colors.black],
+    // ... from the top (transparent) to half (0.5) of the way to the bottom.
+    stops: [0.0, 0.5],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  @override
+  State<HistoryList> createState() => _HistoryListState();
+}
+
+class _HistoryListState extends State<HistoryList> {
+  final _key = GlobalKey();
+
+  @override
+  Widget build(BuildContext context) {
+    var state = context.watch<MyAppState>();
+    state.historyListKey = _key;
+
+    return ShaderMask(
+      shaderCallback: (bounds) =>
+          HistoryList._maskingGradient.createShader(bounds),
+      blendMode: BlendMode.dstIn,
+      child: AnimatedList(
+          key: _key,
+          reverse: true,
+          padding: EdgeInsets.only(top: 100),
+          initialItemCount: state.history.length,
+          itemBuilder: (context, index, animation) {
+            var word = state.getFromHistory(index);
+
+            return SizeTransition(
+              sizeFactor: animation,
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: () {
+                    state.toggleFavorits(word);
+                  },
+                  icon: state.favorites.contains(word)
+                      ? Icon(Icons.favorite, size: 12)
+                      : SizedBox(),
+                  label: Text(
+                    word.asLowerCase,
+                    semanticsLabel: word.asPascalCase,
+                  ),
+                ),
+              ),
+            );
+          }),
     );
   }
 }
